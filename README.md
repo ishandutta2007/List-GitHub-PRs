@@ -4,7 +4,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.108.0-05998b.svg)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An automated tool to fetch, list, and analyze PRs for multiple GitHub repositories using the GitHub REST API. Features a **Modern Web UI** for batch processing and a **Powerful CLI** for quick lookups.
+An automated tool to fetch, list, and analyze Pull Requests for multiple GitHub repositories using the GitHub REST API. Features a **Modern Web UI** for batch processing and a **Powerful CLI** for quick lookups.
 
 ---
 
@@ -39,7 +39,7 @@ An automated tool to fetch, list, and analyze PRs for multiple GitHub repositori
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/List-GitHub-PRs.git
+git clone https://github.com/ishandutta2007/List-GitHub-PRs.git
 cd List-GitHub-PRs
 ```
 

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub PR Fetcher</title>
+    <style>
+        :root {
+            --primary-color: #2ea44f;
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --text-color: #c9d1d9;
+            --border-color: #30363d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            padding: 12px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: 1px solid rgba(27, 31, 36, 0.15);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #2c974b;
+        }
+
+        button:disabled {
+            background-color: #216e39;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #results {
+            margin-top: 24px;
+        }
+
+        .repo-result {
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 0;
+        }
+
+        .repo-result:last-child {
+            border-bottom: none;
+        }
+
+        .repo-name {
+            font-weight: 600;
+            color: #58a6ff;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .username-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .username {
+            background-color: rgba(56, 139, 253, 0.1);
+            color: #58a6ff;
+            border: 1px solid rgba(56, 139, 253, 0.4);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .status-success { background: rgba(46, 164, 79, 0.2); color: #3fb950; }
+        .status-error { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+        .status-empty { background: rgba(139, 148, 158, 0.2); color: #8b949e; }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub PR Fetcher</h1>
+            <p>Fetch pull request authors across multiple repositories</p>
+        </header>
+
+        <div class="card">
+            <textarea id="repoInput" placeholder="ishandutta2007/Top-AI-repos&#10;owner/repo (one per line)"></textarea>
+            <div class="controls">
+                <div class="toggle-container">
+                    <input type="checkbox" id="appendMode">
+                    <label for="appendMode">Append to PRs.txt</label>
+                </div>
+                <button id="fetchBtn" onclick="fetchPRs()">Fetch PRs</button>
+            </div>
+        </div>
+
+        <div id="results" class="card" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function fetchPRs() {
+            const input = document.getElementById('repoInput').value;
+            const append = document.getElementById('appendMode').checked;
+            const fetchBtn = document.getElementById('fetchBtn');
+            const resultsDiv = document.getElementById('results');
+
+            const repos = input.split('\n').map(r => r.trim()).filter(r => r !== '');
+            
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = 'Fetching...';
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="loading">Fetching data from GitHub API...</div>';
+
+            try {
+                let url = `/api/PRs?append=${append}`;
+                repos.forEach(repo => {
+                    url += `&repos=${encodeURIComponent(repo)}`;
+                });
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                displayResults(data.results);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="status-error" style="padding: 10px; border-radius: 4px;">Error: ${error.message}</div>`;
+            } finally {
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = 'Fetch PRs';
+            }
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            if (!results || results.length === 0) {
+                resultsDiv.innerHTML = 'No results found.';
+                return;
+            }
+
+            let html = '';
+            results.forEach(res => {
+                const statusClass = res.status === 'success' ? 'status-success' : (res.status === 'error' ? 'status-error' : 'status-empty');
+                const statusText = res.status.toUpperCase();
+
+                html += `
+                    <div class="repo-result">
+                        <div class="repo-name">
+                            <span>${res.repo}</span>
+                            <span class="status-badge ${statusClass}">${statusText} ${res.count > 0 ? '(' + res.count + ')' : ''}</span>
+                        </div>
+                        ${res.error ? `<div style="color: #f85149; font-size: 13px; margin-bottom: 8px;">${res.error}</div>` : ''}
+                        <div class="username-list">
+                            ${res.usernames.map(u => `<span class="username">${u}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
